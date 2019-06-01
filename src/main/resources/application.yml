@@ -1,0 +1,4 @@
+server :
+  servlet:
+    context-path : /food-truck-sample
+  port :  4444
