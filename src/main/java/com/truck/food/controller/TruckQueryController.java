@@ -5,12 +5,15 @@ import static com.truck.food.constant.CommonConstant.PUT_TRUCK_FROM_ROW_INFO_END
 import static com.truck.food.constant.CommonConstant.PUT_TRUCK_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.QUERY_LOCATION_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.QUERY_NAME_ENDPOINT;
+import static com.truck.food.constant.CommonConstant.QUERY_STREET_ENDPOINT;
+import static com.truck.food.constant.CommonConstant.DELETE_TRUCK_INFO_ENDPOINT;
 
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -125,6 +128,32 @@ public class TruckQueryController {
 		return result;
 	}
 
+	@ApiOperation(value = "query truck info from given lat:long and given radius", response = String.class, notes = "query truck info from given lat:long and given radius")
+	@ApiResponses(value = {
+			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
+			@ApiResponse(code = 400, message = "Bad request."),
+			@ApiResponse(code = 404, message = "The resource you were trying to reach is not found."),
+			@ApiResponse(code = 502, message = "DownStream API responded with BAD_REQUEST"),
+			@ApiResponse(code = 504, message = "DownStream Api is not responding"),
+			@ApiResponse(code = 500, message = "Some internal error occured.") })
+	@GetMapping(value = QUERY_STREET_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
+	public DeferredResult<ResponseEntity<String>> getTruckByQueryStreet(
+			@ApiParam(name = "street", required = true, defaultValue = "MARKET", value = "street") @RequestParam(name = "street", required = true) String streetName) {
+		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
+		FTResponseEntity response = new FTResponseEntity();
+		Observable.just(result).doOnNext(res -> {
+			TruckQueryResponse resp = truckService.queryByStreetName(streetName);
+			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
+		}).doOnComplete(() -> {
+			result.setResult(response.getEntity());
+		}).doOnError(e -> {
+			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);
+			response.setEntity(FTUtil.buildResponse(errResp, errResp.getResponseCode(), true));
+			result.setErrorResult(response.getEntity());
+		}).subscribe();
+		return result;
+	}
+
 	@ApiOperation(value = "put truck info for given truck id or location id in db", response = String.class, notes = "put truck infor given truck id or location id in db")
 	@ApiResponses(value = {
 			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
@@ -140,6 +169,32 @@ public class TruckQueryController {
 		FTResponseEntity response = new FTResponseEntity();
 		Observable.just(result).doOnNext(res -> {
 			TruckPutResponse resp = truckService.putTrucks(request);
+			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
+		}).doOnComplete(() -> {
+			result.setResult(response.getEntity());
+		}).doOnError(e -> {
+			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);
+			response.setEntity(FTUtil.buildResponse(errResp, errResp.getResponseCode(), true));
+			result.setErrorResult(response.getEntity());
+		}).subscribe();
+		return result;
+	}
+
+	@ApiOperation(value = "delete truck info for given truck id or location id in db", response = String.class, notes = "delete truck infor given truck id or location id in db")
+	@ApiResponses(value = {
+			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
+			@ApiResponse(code = 400, message = "Bad request."),
+			@ApiResponse(code = 404, message = "The resource you were trying to reach is not found."),
+			@ApiResponse(code = 502, message = "DownStream API responded with BAD_REQUEST"),
+			@ApiResponse(code = 504, message = "DownStream Api is not responding"),
+			@ApiResponse(code = 500, message = "Some internal error occured.") })
+	@DeleteMapping(value = DELETE_TRUCK_INFO_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
+	public DeferredResult<ResponseEntity<String>> deleteTruck(
+			@ApiParam(name = "truckId", required = true, value = "truckId") @RequestParam(name = "truckId", required = true) String truckId) {
+		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
+		FTResponseEntity response = new FTResponseEntity();
+		Observable.just(result).doOnNext(res -> {
+			BaseResponse resp = truckService.deleteTruck(truckId);
 			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
 		}).doOnComplete(() -> {
 			result.setResult(response.getEntity());

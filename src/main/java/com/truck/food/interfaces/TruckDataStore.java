@@ -13,12 +13,12 @@ public interface TruckDataStore {
 	public boolean update(String key, Truck truck);
 	public List<Truck> queryByName(String[] bin, String value);
 	public List<Truck> queryByLocation(String binNameLatLonGeo, String[] bin, Double lat, Double lng, int radius);
+	public List<Truck> queryByStreetName(String binNameLocDesc, String[] defaultBins, String streetName);
+	public boolean delete(String truckId);
 	
 	public default String getKey(Truck truck) {
 		return truck.getLocationId().toString();
 	}
-	
-	
 	
 	
 	

@@ -52,6 +52,7 @@ public class CommonAdaptor {
 		truck.setApllicantName(vals[1]);
 		truck.setLocationId(Long.valueOf(vals[0]));
 		truck.setFacilityType(FacilityType.getFacility(vals[2]));
+		truck.setLocationDescription(vals[4]);
 		truck.setLatitude(Double.valueOf(vals[14]));
 		truck.setLongitude(Double.valueOf((vals[15])));
 		String dateString = vals[22].trim();
