@@ -11,10 +11,9 @@ public interface TruckDataStore {
 	public boolean put(String key, Truck truck);
 	public boolean put(String key, Truck truck, Integer expiry);
 	public boolean update(String key, Truck truck);
-	public List<Truck> queryByName(String bin, String value);
+	public List<Truck> queryByName(String[] bin, String value);
 	
 	public default String getKey(Truck truck) {
-		
 		return truck.getLocationId().toString();
 	}
 	

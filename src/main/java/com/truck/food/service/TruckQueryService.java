@@ -1,8 +1,14 @@
 package com.truck.food.service;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,12 +19,15 @@ import com.truck.food.constant.AeroSpikeConstant;
 import com.truck.food.ftenum.ResponseStatus;
 import com.truck.food.impl.AerospikeTruckDataStoreImpl;
 import com.truck.food.pojo.AddTruckRequest;
+import com.truck.food.pojo.DBSyncResponse;
 import com.truck.food.pojo.Truck;
 import com.truck.food.pojo.TruckPutResponse;
 import com.truck.food.pojo.TruckQueryResponse;
 
 @Service
 public class TruckQueryService {
+
+	private static Logger LOGGER = LogManager.getLogger(TruckQueryService.class);
 
 	@Autowired
 	private AerospikeTruckDataStoreImpl asTruckDataStore;
@@ -39,7 +48,9 @@ public class TruckQueryService {
 
 	public TruckQueryResponse queryByName(String value) {
 		TruckQueryResponse response = new TruckQueryResponse();
-		List<Truck> trucks = asTruckDataStore.queryByName(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME, value);
+		List<Truck> trucks = asTruckDataStore.queryByName(new String[] { AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
+				AeroSpikeConstant.BIN_NAME_TRUCK_ID, AeroSpikeConstant.BIN_NAME_LOCATION_ID,
+				AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE }, value);
 		response.setTrucks(trucks);
 		response.setResponseCode(HttpStatus.OK);
 		response.setResponseStatus(ResponseStatus.SUCCESS);
@@ -91,5 +102,41 @@ public class TruckQueryService {
 	public TruckPutResponse putTrucksFromRow(String row) {
 		AddTruckRequest request = CommonAdaptor.getPutTruckRequest(row);
 		return putTrucks(request);
+	}
+
+	public DBSyncResponse syncDB(String filePath, int range) {
+		DBSyncResponse response = new DBSyncResponse();
+		String line;
+		FileReader fr;
+		BufferedReader bufferreader = null;
+		int success = 0, failed = 0;
+		try {
+			fr = new FileReader(filePath);
+			bufferreader = new BufferedReader(fr);
+			line = bufferreader.readLine();// Escaping first line
+			while ((line = bufferreader.readLine()) != null && (success + failed) < range) {
+				try {
+					putTrucksFromRow(line);
+					success++;
+				} catch (Exception ex) {
+					LOGGER.error(line);
+					failed++;
+				}
+			}
+			bufferreader.close();
+			fr.close();
+		} catch (FileNotFoundException ex) {
+			LOGGER.error(ex);
+			ex.printStackTrace();
+		} catch (IOException ex) {
+			LOGGER.error(ex);
+			ex.printStackTrace();
+		}
+		response.setRecordsInsertedSuccessCount(success);
+		response.setRecordsInsertedFailedCount(failed);
+		response.setRecordsTotalCount(success + failed);
+		response.setResponseCode(HttpStatus.OK);
+		response.setResponseStatus(ResponseStatus.SUCCESS);
+		return response;
 	}
 }
