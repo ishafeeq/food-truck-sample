@@ -21,6 +21,10 @@ import com.aerospike.client.policy.WritePolicy;
 import com.aerospike.client.query.Filter;
 import com.aerospike.client.query.IndexType;
 import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.IndexCollectionType;
+import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.RecordSet;
 import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.Statement;
@@ -157,7 +161,6 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		stmt.setNamespace(aerospikeConfig.getNamespace());
 		stmt.setSetName(aerospikeConfig.getSet());
 		stmt.setBinNames(bin);
-		Filter.geoWithinRadius("binName", 23, 34, 20);
 		stmt.setPredExp(PredExp.stringBin(bin[0]), PredExp.stringValue(value),
 				PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE));
 		RecordSet records = aerospikeClient.query(null, stmt);
@@ -198,8 +201,6 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		Truck truck = new Truck();
 		truck.setTruckId((String) record.getValue(AeroSpikeConstant.BIN_NAME_TRUCK_ID));
 		truck.setApllicantName((String) record.bins.get(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME));
-		truck.setFacilityType(
-				(FacilityType.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
 		truck.setLocationId((Long) record.bins.get(AeroSpikeConstant.BIN_NAME_LOCATION_ID));
 		String[] loc = getLatLong(((GeoJSONValue) record.bins.get(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO)).toString());
 		if (null != loc && loc.length > 0) {
@@ -207,6 +208,9 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 			truck.setLongitude(Double.valueOf(loc[0].trim()));
 		}
 		truck.setExpirationDate((Long.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE))));
+		truck.setFacilityType((FacilityType.valueOf((String)record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
+//		truck.setExpirationDate(new Date((String)record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE)));
+
 		return truck;
 	}
 
