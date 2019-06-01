@@ -1,7 +1,10 @@
 package com.truck.food.controller;
 
+import static com.truck.food.constant.CommonConstant.GET_TRUCK_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.SYNC_DB_ENDPOINT;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +29,8 @@ import io.swagger.annotations.ApiResponses;
 @RestController
 public class DBHelperController {
 
+	private static final Logger LOGGER = LogManager.getLogger(DBHelperController.class);
+
 	@Autowired
 	private TruckQueryService truckService;
 
@@ -41,12 +46,14 @@ public class DBHelperController {
 	public DeferredResult<ResponseEntity<String>> getTruckByQuery(
 			@ApiParam(name = "path", required = false, defaultValue = "/home/mmt7147/Documents/AeroSpk/Mobile_Food_Facility_Permit.csv", value = "path") @RequestParam(name = "path", required = false) String filePath,
 			@ApiParam(name = "count", required = false, defaultValue = "10", value = "path") @RequestParam(name = "count", required = false) String recordCount) {
+		long startTime = System.currentTimeMillis();
 		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
 		FTResponseEntity response = new FTResponseEntity();
 		Observable.just(result).doOnNext(res -> {
 			DBSyncResponse resp = truckService.syncDB(filePath, Integer.valueOf(recordCount));
 			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
 		}).doOnComplete(() -> {
+			LOGGER.info(SYNC_DB_ENDPOINT + " Total Time:" + String.valueOf(System.currentTimeMillis() - startTime));
 			result.setResult(response.getEntity());
 		}).doOnError(e -> {
 			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);
