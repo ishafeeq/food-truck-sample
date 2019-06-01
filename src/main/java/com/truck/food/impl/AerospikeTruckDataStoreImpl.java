@@ -18,7 +18,9 @@ import com.aerospike.client.policy.RecordExistsAction;
 import com.aerospike.client.policy.WritePolicy;
 import com.aerospike.client.query.Filter;
 import com.aerospike.client.query.IndexCollectionType;
+import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.Statement;
 import com.truck.food.config.AerospikeConfig;
 import com.truck.food.constant.AeroSpikeConstant;
@@ -117,13 +119,17 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 	}
 
 	@Override
-	public List<Truck> queryByName(String bin, String value) {
+	public List<Truck> queryByName(String[] bin, String value) {
 		Statement stmt = new Statement();
 		List<Truck> trucks = new ArrayList<>();
 		stmt.setNamespace(aerospikeConfig.getNamespace());
 		stmt.setSetName(aerospikeConfig.getSet());
 		stmt.setBinNames(bin);
-		stmt.setFilter(Filter.contains(bin, IndexCollectionType.DEFAULT, value));
+		stmt.setPredExp(
+		        PredExp.stringBin(bin[0]),
+		        PredExp.stringValue(value),
+		        PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE)
+		        );
 		RecordSet records = aerospikeClient.query(null, stmt);
 		try {
 			while (records.next()) {
@@ -141,9 +147,9 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		Truck truck = new Truck();
 		truck.setTruckId((String) record.getValue(AeroSpikeConstant.BIN_NAME_TRUCK_ID));
 		truck.setApllicantName((String) record.bins.get(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME));
-		truck.setFacilityType((FacilityType) record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE));
+		truck.setFacilityType((FacilityType.valueOf((String)record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
 		truck.setLocationId((Long) record.bins.get(AeroSpikeConstant.BIN_NAME_LOCATION_ID));
-		truck.setExpirationDate((Date) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE));
+//		truck.setExpirationDate(new Date((String)record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE)));
 
 		return truck;
 	}

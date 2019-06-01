@@ -39,7 +39,9 @@ public class TruckQueryService {
 
 	public TruckQueryResponse queryByName(String value) {
 		TruckQueryResponse response = new TruckQueryResponse();
-		List<Truck> trucks = asTruckDataStore.queryByName(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME, value);
+		List<Truck> trucks = asTruckDataStore.queryByName(new String[] { AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
+				AeroSpikeConstant.BIN_NAME_TRUCK_ID, AeroSpikeConstant.BIN_NAME_LOCATION_ID,
+				AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE }, value);
 		response.setTrucks(trucks);
 		response.setResponseCode(HttpStatus.OK);
 		response.setResponseStatus(ResponseStatus.SUCCESS);
