@@ -12,5 +12,6 @@ public class AeroSpikeConstant {
 	public static final String BIN_NAME_FACILITY_TYPE = "fac_typ";
 	public static final String BIN_NAME_LOCATION_ID = "loc_id";
 	public static final String BIN_NAME_EXPIRATION_DATE = "exp_dt";
+	public static final String BIN_NAME_LAT_LON_GEO = "geo_2d";
 	
 }

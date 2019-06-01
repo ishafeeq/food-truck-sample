@@ -1,7 +1,5 @@
 package com.truck.food.pojo;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -19,20 +17,17 @@ public class Truck {
 	private LicenseStatus status;
 	private List<FoodItem> foodItems;
 	
-	private BigDecimal xCord;
-	private BigDecimal yCord;
+	private Double xCord;
+	private Double yCord;
 	
-	private BigDecimal latitude;
-	private BigDecimal longitude;
+	private Double latitude;
+	private Double longitude;
 	
-	private Date nOISent;
-	private Date approved;
-	private Date received;
-	private Date priorPermit;
-	private Date expirationDate;
-	
-	
-	
+	private Long nOISent;
+	private Long approved;
+	private Long received;
+	private Long priorPermit;
+	private Long expirationDate;
 	/**
 	 * @return the truckId
 	 */
@@ -105,114 +100,116 @@ public class Truck {
 	public void setFoodItems(List<FoodItem> foodItems) {
 		this.foodItems = foodItems;
 	}
+	
 	/**
 	 * @return the xCord
 	 */
-	public BigDecimal getxCord() {
+	public Double getxCord() {
 		return xCord;
 	}
 	/**
 	 * @param xCord the xCord to set
 	 */
-	public void setxCord(BigDecimal xCord) {
+	public void setxCord(Double xCord) {
 		this.xCord = xCord;
 	}
 	/**
 	 * @return the yCord
 	 */
-	public BigDecimal getyCord() {
+	public Double getyCord() {
 		return yCord;
 	}
 	/**
 	 * @param yCord the yCord to set
 	 */
-	public void setyCord(BigDecimal yCord) {
+	public void setyCord(Double yCord) {
 		this.yCord = yCord;
 	}
 	/**
 	 * @return the latitude
 	 */
-	public BigDecimal getLatitude() {
+	public Double getLatitude() {
 		return latitude;
 	}
 	/**
 	 * @param latitude the latitude to set
 	 */
-	public void setLatitude(BigDecimal latitude) {
+	public void setLatitude(Double latitude) {
 		this.latitude = latitude;
 	}
 	/**
 	 * @return the longitude
 	 */
-	public BigDecimal getLongitude() {
+	public Double getLongitude() {
 		return longitude;
 	}
 	/**
 	 * @param longitude the longitude to set
 	 */
-	public void setLongitude(BigDecimal longitude) {
+	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
 	}
 	/**
 	 * @return the nOISent
 	 */
-	public Date getnOISent() {
+	public Long getnOISent() {
 		return nOISent;
 	}
 	/**
 	 * @param nOISent the nOISent to set
 	 */
-	public void setnOISent(Date nOISent) {
+	public void setnOISent(Long nOISent) {
 		this.nOISent = nOISent;
 	}
 	/**
 	 * @return the approved
 	 */
-	public Date getApproved() {
+	public Long getApproved() {
 		return approved;
 	}
 	/**
 	 * @param approved the approved to set
 	 */
-	public void setApproved(Date approved) {
+	public void setApproved(Long approved) {
 		this.approved = approved;
 	}
 	/**
 	 * @return the received
 	 */
-	public Date getReceived() {
+	public Long getReceived() {
 		return received;
 	}
 	/**
 	 * @param received the received to set
 	 */
-	public void setReceived(Date received) {
+	public void setReceived(Long received) {
 		this.received = received;
 	}
 	/**
 	 * @return the priorPermit
 	 */
-	public Date getPriorPermit() {
+	public Long getPriorPermit() {
 		return priorPermit;
 	}
 	/**
 	 * @param priorPermit the priorPermit to set
 	 */
-	public void setPriorPermit(Date priorPermit) {
+	public void setPriorPermit(Long priorPermit) {
 		this.priorPermit = priorPermit;
 	}
 	/**
 	 * @return the expirationDate
 	 */
-	public Date getExpirationDate() {
+	public Long getExpirationDate() {
 		return expirationDate;
 	}
 	/**
 	 * @param expirationDate the expirationDate to set
 	 */
-	public void setExpirationDate(Date expirationDate) {
+	public void setExpirationDate(Long expirationDate) {
 		this.expirationDate = expirationDate;
 	}
 	
+
 	
 }

@@ -28,4 +28,13 @@ public class AerospikeUtil {
 		return varArgsHosts;
 	}
 
+	public static StringBuilder getGeo2DString(String lat, String lng) {
+		StringBuilder ptsb = new StringBuilder();
+		ptsb.append("{ \"type\": \"Point\", \"coordinates\": [");
+		ptsb.append(lng);
+		ptsb.append(", ");
+		ptsb.append(lat);
+		ptsb.append("] }");
+		return ptsb;
+	}
 }

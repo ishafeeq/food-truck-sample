@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.aerospike.client.Bin;
 import com.truck.food.adaptor.CommonAdaptor;
 import com.truck.food.constant.AeroSpikeConstant;
+import com.truck.food.constant.CommonConstant;
 import com.truck.food.ftenum.ResponseStatus;
 import com.truck.food.impl.AerospikeTruckDataStoreImpl;
 import com.truck.food.pojo.AddTruckRequest;
@@ -48,14 +52,18 @@ public class TruckQueryService {
 
 	public TruckQueryResponse queryByName(String value) {
 		TruckQueryResponse response = new TruckQueryResponse();
-		List<Truck> trucks = asTruckDataStore.queryByName(new String[] { AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
-				AeroSpikeConstant.BIN_NAME_TRUCK_ID, AeroSpikeConstant.BIN_NAME_LOCATION_ID,
-				AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE }, value);
+		List<Truck> trucks = asTruckDataStore.queryByName(getDefaultBins(), value);
 		response.setTrucks(trucks);
 		response.setResponseCode(HttpStatus.OK);
 		response.setResponseStatus(ResponseStatus.SUCCESS);
 		return response;
 
+	}
+
+	private String[] getDefaultBins() {
+		return new String[] { AeroSpikeConstant.BIN_NAME_APPLICANT_NAME, AeroSpikeConstant.BIN_NAME_TRUCK_ID,
+				AeroSpikeConstant.BIN_NAME_LOCATION_ID, AeroSpikeConstant.BIN_NAME_FACILITY_TYPE,
+				AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE, AeroSpikeConstant.BIN_NAME_LAT_LON_GEO };
 	}
 
 	public TruckPutResponse putTrucks(AddTruckRequest trucksReq) {
@@ -139,4 +147,21 @@ public class TruckQueryService {
 		response.setResponseStatus(ResponseStatus.SUCCESS);
 		return response;
 	}
+
+	public TruckQueryResponse queryByLoc(String locations, String radius) {
+		TruckQueryResponse response = new TruckQueryResponse();
+		String[] locs = locations.split(CommonConstant.COMMA);
+		Map<String, List<Truck>> truckMap = new HashMap<>();
+		for (String loc : locs) {
+			String[] latLong = loc.split(CommonConstant.COLON);
+			List<Truck> trucks = asTruckDataStore.queryByLocation(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO,
+					getDefaultBins(), Double.valueOf(latLong[0]), Double.valueOf(latLong[1]), Integer.valueOf(radius));
+			truckMap.put(loc, trucks);
+		}
+		response.setLocationMap(truckMap);
+		response.setResponseStatus(ResponseStatus.SUCCESS);
+		response.setResponseCode(HttpStatus.OK);
+		return response;
+	}
+
 }

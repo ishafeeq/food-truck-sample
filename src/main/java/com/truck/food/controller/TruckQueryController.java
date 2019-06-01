@@ -3,7 +3,8 @@ package com.truck.food.controller;
 import static com.truck.food.constant.CommonConstant.GET_TRUCK_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.PUT_TRUCK_FROM_ROW_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.PUT_TRUCK_INFO_ENDPOINT;
-import static com.truck.food.constant.CommonConstant.QUERY_TRUCK_INFO_ENDPOINT;
+import static com.truck.food.constant.CommonConstant.QUERY_LOCATION_ENDPOINT;
+import static com.truck.food.constant.CommonConstant.QUERY_NAME_ENDPOINT;
 
 import java.util.Arrays;
 
@@ -45,7 +46,7 @@ public class TruckQueryController {
 	@Autowired
 	private TruckQueryService truckService;
 
-	@ApiOperation(value = "get truck info for given truck id", response = String.class, notes = "get truck infor given truck id")
+	@ApiOperation(value = "get truck info for given truck id or location Id", response = String.class, notes = "get truck infor given truck id or location Id")
 	@ApiResponses(value = {
 			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
 			@ApiResponse(code = 400, message = "Bad request."),
@@ -71,7 +72,7 @@ public class TruckQueryController {
 		return result;
 	}
 
-	@ApiOperation(value = "get truck info for given truck id", response = String.class, notes = "get truck infor given truck id")
+	@ApiOperation(value = "get trucks from Applicant name", response = String.class, notes = "get trucks from Applicant name")
 	@ApiResponses(value = {
 			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
 			@ApiResponse(code = 400, message = "Bad request."),
@@ -79,9 +80,8 @@ public class TruckQueryController {
 			@ApiResponse(code = 502, message = "DownStream API responded with BAD_REQUEST"),
 			@ApiResponse(code = 504, message = "DownStream Api is not responding"),
 			@ApiResponse(code = 500, message = "Some internal error occured.") })
-	@GetMapping(value = QUERY_TRUCK_INFO_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
-	public DeferredResult<ResponseEntity<String>> getTruckByQuery(
-			@ApiParam(name = "param_name", required = false, defaultValue = "app_n", value = "truck_ids") @RequestParam(name = "ids", required = false) String paramName,
+	@GetMapping(value = QUERY_NAME_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
+	public DeferredResult<ResponseEntity<String>> getTruckByQueryName(
 			@ApiParam(name = "param_value", required = false, defaultValue = "Mayor", value = "param_value") @RequestParam(name = "param_value", required = false) String paramValue) {
 		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
 		FTResponseEntity response = new FTResponseEntity();
@@ -98,7 +98,34 @@ public class TruckQueryController {
 		return result;
 	}
 
-	@ApiOperation(value = "put truck info for given truck id in db", response = String.class, notes = "put truck infor given truck id in db")
+	@ApiOperation(value = "query truck info from given lat:long and given radius", response = String.class, notes = "query truck info from given lat:long and given radius")
+	@ApiResponses(value = {
+			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
+			@ApiResponse(code = 400, message = "Bad request."),
+			@ApiResponse(code = 404, message = "The resource you were trying to reach is not found."),
+			@ApiResponse(code = 502, message = "DownStream API responded with BAD_REQUEST"),
+			@ApiResponse(code = 504, message = "DownStream Api is not responding"),
+			@ApiResponse(code = 500, message = "Some internal error occured.") })
+	@GetMapping(value = QUERY_LOCATION_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
+	public DeferredResult<ResponseEntity<String>> getTruckByQueryLoc(
+			@ApiParam(name = "locs", required = true, defaultValue = "37.7781283797338:-122.418652129997", value = "locs") @RequestParam(name = "locs", required = true) String locations,
+			@ApiParam(name = "radius", required = true, defaultValue = "500", value = "radius") @RequestParam(name = "radius", required = true) String radius) {
+		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
+		FTResponseEntity response = new FTResponseEntity();
+		Observable.just(result).doOnNext(res -> {
+			TruckQueryResponse resp = truckService.queryByLoc(locations, radius);
+			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
+		}).doOnComplete(() -> {
+			result.setResult(response.getEntity());
+		}).doOnError(e -> {
+			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);
+			response.setEntity(FTUtil.buildResponse(errResp, errResp.getResponseCode(), true));
+			result.setErrorResult(response.getEntity());
+		}).subscribe();
+		return result;
+	}
+
+	@ApiOperation(value = "put truck info for given truck id or location id in db", response = String.class, notes = "put truck infor given truck id or location id in db")
 	@ApiResponses(value = {
 			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
 			@ApiResponse(code = 400, message = "Bad request."),

@@ -1,7 +1,9 @@
 package com.truck.food.adaptor;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,8 @@ import com.truck.food.pojo.Truck;
 
 public class CommonAdaptor {
 
+	private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a");
+	
 	public static BaseResponse getSuccessResponse() {
 		return null;
 	}
@@ -40,15 +44,19 @@ public class CommonAdaptor {
 	}
 
 	public static AddTruckRequest getPutTruckRequest(String row) {
-		String[] vals = row.split(CommonConstant.COMMA);
 		AddTruckRequest request = new AddTruckRequest();
 		List<Truck> trucks = new ArrayList<>();
+//		String[] useVal = FTUtil.split(row, CommonConstant.COMMA);
+		String[] vals = row.split(CommonConstant.COMMA);
 		Truck truck = new Truck();
 		truck.setApllicantName(vals[1]);
 		truck.setLocationId(Long.valueOf(vals[0]));
 		truck.setFacilityType(FacilityType.getFacility(vals[2]));
-		truck.setExpirationDate(new Date(vals[22]));
-		
+		truck.setLatitude(Double.valueOf(vals[14]));
+		truck.setLongitude(Double.valueOf((vals[15])));
+		String dateString = vals[22].trim();
+		truck.setExpirationDate(LocalDateTime.parse(dateString, formatter).toEpochSecond(ZoneOffset.UTC));
+
 		trucks.add(truck);
 		request.setTrucks(trucks);
 		return request;
