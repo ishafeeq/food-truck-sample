@@ -23,4 +23,9 @@ public class FTUtil {
 		}
 		return new ResponseEntity<>(response, status);
 	}
+
+	public static String[] split(String row, String comma) {
+		
+		return null;
+	}
 }

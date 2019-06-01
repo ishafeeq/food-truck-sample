@@ -1,7 +1,6 @@
 package com.truck.food.impl;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -14,17 +13,25 @@ import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
+import com.aerospike.client.ResultCode;
+import com.aerospike.client.Value.GeoJSONValue;
+import com.aerospike.client.policy.Policy;
 import com.aerospike.client.policy.RecordExistsAction;
 import com.aerospike.client.policy.WritePolicy;
 import com.aerospike.client.query.Filter;
+import com.aerospike.client.query.IndexType;
+import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.IndexCollectionType;
 import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.RecordSet;
 import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.Statement;
+import com.aerospike.client.task.IndexTask;
 import com.truck.food.config.AerospikeConfig;
 import com.truck.food.constant.AeroSpikeConstant;
+import com.truck.food.constant.CommonConstant;
 import com.truck.food.ftenum.FacilityType;
 import com.truck.food.interfaces.TruckDataStore;
 import com.truck.food.pojo.Truck;
@@ -42,6 +49,34 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 	public void init() {
 		this.aerospikeClient = new AerospikeClient(AerospikeUtil.getAerospikePolicy(aerospikeConfig),
 				AerospikeUtil.getVarArgs(aerospikeConfig));
+		// Create Index of required columns here
+		createIndexes();
+
+	}
+
+	private void createIndexes() {
+		Policy policy = new Policy();
+		policy.socketTimeout = 0; // Do not timeout on index create.
+		String index_applicant_name = "index_applicant_name";
+		String index_address = "index_address";
+		String index_geo_2d = "index_geo_2d";
+		try {
+			IndexTask task1 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
+					aerospikeConfig.getSet(), index_applicant_name, AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
+					IndexType.STRING);
+//			IndexTask task2 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(), aerospikeConfig.getSet(), index_address, AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
+//					IndexType.STRING);
+			IndexTask task3 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
+					aerospikeConfig.getSet(), index_geo_2d, AeroSpikeConstant.BIN_NAME_LAT_LON_GEO,
+					IndexType.GEO2DSPHERE);
+			task1.waitTillComplete();
+//			task2.waitTillComplete();
+			task3.waitTillComplete();
+		} catch (AerospikeException ae) {
+			if (ae.getResultCode() != ResultCode.INDEX_ALREADY_EXISTS) {
+				throw ae;
+			}
+		}
 
 	}
 
@@ -126,11 +161,8 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		stmt.setNamespace(aerospikeConfig.getNamespace());
 		stmt.setSetName(aerospikeConfig.getSet());
 		stmt.setBinNames(bin);
-		stmt.setPredExp(
-		        PredExp.stringBin(bin[0]),
-		        PredExp.stringValue(value),
-		        PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE)
-		        );
+		stmt.setPredExp(PredExp.stringBin(bin[0]), PredExp.stringValue(value),
+				PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE));
 		RecordSet records = aerospikeClient.query(null, stmt);
 		try {
 			while (records.next()) {
@@ -144,27 +176,69 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		return trucks;
 	}
 
+	@Override
+	public List<Truck> queryByLocation(String binNameLatLonGeo, String[] bin, Double lat, Double lng, int radius) {
+		Statement stmt = new Statement();
+		List<Truck> trucks = new ArrayList<>();
+		stmt.setNamespace(aerospikeConfig.getNamespace());
+		stmt.setSetName(aerospikeConfig.getSet());
+		stmt.setBinNames(bin);
+		stmt.setFilter(Filter.geoWithinRadius(binNameLatLonGeo, lng, lat, radius));
+		RecordSet records = aerospikeClient.query(null, stmt);
+		try {
+			while (records.next()) {
+				Record record = records.getRecord();
+				Truck qTruck = getTruckFromRecord(record);
+				trucks.add(qTruck);
+			}
+		} finally {
+			records.close();
+		}
+		return trucks;
+	}
+
 	private Truck getTruckFromRecord(Record record) {
 		Truck truck = new Truck();
 		truck.setTruckId((String) record.getValue(AeroSpikeConstant.BIN_NAME_TRUCK_ID));
 		truck.setApllicantName((String) record.bins.get(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME));
-		truck.setFacilityType((FacilityType.valueOf((String)record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
 		truck.setLocationId((Long) record.bins.get(AeroSpikeConstant.BIN_NAME_LOCATION_ID));
+		String[] loc = getLatLong(((GeoJSONValue) record.bins.get(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO)).toString());
+		if (null != loc && loc.length > 0) {
+			truck.setLatitude(Double.valueOf(loc[1].trim()));
+			truck.setLongitude(Double.valueOf(loc[0].trim()));
+		}
+		truck.setExpirationDate((Long.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE))));
+		truck.setFacilityType((FacilityType.valueOf((String)record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
 //		truck.setExpirationDate(new Date((String)record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE)));
 
 		return truck;
 	}
 
+	private String[] getLatLong(String latLong) {
+		if (null != latLong) {
+			String str1 = latLong.split(CommonConstant.OPEN_SQUARE_BRACKET)[1];
+			String str2 = str1.split(CommonConstant.CLOSE_SQUARE_BRACKET)[0];
+			return str2.split(CommonConstant.COMMA);
+		} else {
+			return null;
+		}
+
+	}
+
 	private Bin[] getAllBins(Truck truck) {
-		Bin[] bins = new Bin[5];
+		Bin[] bins = new Bin[6];
 
 		bins[0] = new Bin(AeroSpikeConstant.BIN_NAME_TRUCK_ID, truck.getTruckId());
 		bins[1] = new Bin(AeroSpikeConstant.BIN_NAME_LOCATION_ID, truck.getLocationId());
 		bins[2] = new Bin(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME, truck.getApllicantName());
 		bins[3] = new Bin(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, truck.getFacilityType().name());
 		bins[4] = new Bin(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE, truck.getExpirationDate().toString());
-
+		bins[5] = Bin.asGeoJSON(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO, getGeo2DString(truck).toString());
 		return bins;
+	}
+
+	private StringBuilder getGeo2DString(Truck truck) {
+		return AerospikeUtil.getGeo2DString(String.valueOf(truck.getLatitude()), String.valueOf(truck.getLongitude()));
 	}
 
 }
