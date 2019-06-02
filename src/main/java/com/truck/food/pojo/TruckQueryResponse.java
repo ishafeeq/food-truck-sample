@@ -11,7 +11,7 @@ public class TruckQueryResponse extends BaseResponse {
 
 	private List<Truck> trucks;
 	private Map<String, List<Truck>> locationMap;
-
+	private Integer numberOfResults;
 	/**
 	 * @return the trucks
 	 */
@@ -38,6 +38,20 @@ public class TruckQueryResponse extends BaseResponse {
 	 */
 	public void setLocationMap(Map<String, List<Truck>> locationMap) {
 		this.locationMap = locationMap;
+	}
+
+	/**
+	 * @return the numberOfResults
+	 */
+	public Integer getNumberOfResults() {
+		return numberOfResults;
+	}
+
+	/**
+	 * @param numberOfResults the numberOfResults to set
+	 */
+	public void setNumberOfResults(Integer numberOfResults) {
+		this.numberOfResults = numberOfResults;
 	}
 	
 }

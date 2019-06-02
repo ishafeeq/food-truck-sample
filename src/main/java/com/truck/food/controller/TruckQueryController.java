@@ -7,6 +7,7 @@ import static com.truck.food.constant.CommonConstant.PUT_TRUCK_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.QUERY_LOCATION_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.QUERY_NAME_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.QUERY_STREET_ENDPOINT;
+import static com.truck.food.constant.CommonConstant.QUERY_EXPIRY_ENDPOINT;
 
 import java.util.Arrays;
 
@@ -160,6 +161,36 @@ public class TruckQueryController {
 		}).doOnComplete(() -> {
 			LOGGER.info(
 					QUERY_STREET_ENDPOINT + " Total Time:" + String.valueOf(System.currentTimeMillis() - startTime));
+			result.setResult(response.getEntity());
+		}).doOnError(e -> {
+			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);
+			response.setEntity(FTUtil.buildResponse(errResp, errResp.getResponseCode(), true));
+			result.setErrorResult(response.getEntity());
+		}).subscribe();
+		return result;
+	}
+
+	@ApiOperation(value = "query truck info from expiration status", response = String.class, notes = "query truck info from expiration status")
+	@ApiResponses(value = {
+			@ApiResponse(code = 200, message = "Successfully retrived details for given input request."),
+			@ApiResponse(code = 400, message = "Bad request."),
+			@ApiResponse(code = 404, message = "The resource you were trying to reach is not found."),
+			@ApiResponse(code = 502, message = "DownStream API responded with BAD_REQUEST"),
+			@ApiResponse(code = 504, message = "DownStream Api is not responding"),
+			@ApiResponse(code = 500, message = "Some internal error occured.") })
+	@GetMapping(value = QUERY_EXPIRY_ENDPOINT, produces = { MediaType.APPLICATION_JSON_VALUE })
+	public DeferredResult<ResponseEntity<String>> getTruckByQueryExpiry(
+			@ApiParam(name = "exprd", required = true, defaultValue = "true", value = "exprd") @RequestParam(name = "exprd", required = true) String isExpired,
+			@ApiParam(name = "usTime", required = false, defaultValue = "1563177600000", value = "usTime") @RequestParam(name = "usTime", required = false) String expiryTimeUSinMillis) {
+		long startTime = System.currentTimeMillis();
+		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
+		FTResponseEntity response = new FTResponseEntity();
+		Observable.just(result).doOnNext(res -> {
+			TruckQueryResponse resp = truckService.queryByExpiry(isExpired, expiryTimeUSinMillis);
+			response.setEntity(FTUtil.buildResponse(resp, resp.getResponseCode(), true));
+		}).doOnComplete(() -> {
+			LOGGER.info(
+					QUERY_EXPIRY_ENDPOINT + " Total Time:" + String.valueOf(System.currentTimeMillis() - startTime));
 			result.setResult(response.getEntity());
 		}).doOnError(e -> {
 			BaseResponse errResp = CommonAdaptor.getErrorResponse(e);

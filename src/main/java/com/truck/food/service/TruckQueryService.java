@@ -4,19 +4,26 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import com.aerospike.client.Bin;
 import com.truck.food.adaptor.CommonAdaptor;
 import com.truck.food.constant.AeroSpikeConstant;
 import com.truck.food.constant.CommonConstant;
@@ -33,6 +40,9 @@ import com.truck.food.pojo.TruckQueryResponse;
 public class TruckQueryService {
 
 	private static Logger LOGGER = LogManager.getLogger(TruckQueryService.class);
+
+	private static TimeZone tzInAmerica = DateTimeZone.forID("PST8PDT").toTimeZone();
+	private static TimeZone tzInDefault = DateTimeZone.getDefault().toTimeZone();
 
 	@Autowired
 	private AerospikeTruckDataStoreImpl asTruckDataStore;
@@ -109,7 +119,7 @@ public class TruckQueryService {
 		return response;
 	}
 
-	public TruckPutResponse putTrucksFromRow(String row) {
+	public TruckPutResponse putTrucksFromRow(String row) throws ParseException {
 		AddTruckRequest request = CommonAdaptor.getPutTruckRequest(row);
 		return putTrucks(request);
 	}
@@ -168,7 +178,8 @@ public class TruckQueryService {
 
 	public TruckQueryResponse queryByStreetName(String streetName) {
 		TruckQueryResponse response = new TruckQueryResponse();
-		List<Truck> trucks = asTruckDataStore.queryByStreetName(AeroSpikeConstant.BIN_NAME_LOC_DESC, getDefaultBins(), streetName);
+		List<Truck> trucks = asTruckDataStore.queryByStreetName(AeroSpikeConstant.BIN_NAME_LOC_DESC, getDefaultBins(),
+				streetName);
 		response.setTrucks(trucks);
 		response.setResponseStatus(ResponseStatus.SUCCESS);
 		response.setResponseCode(HttpStatus.OK);
@@ -178,7 +189,7 @@ public class TruckQueryService {
 	public BaseResponse deleteTruck(String truckId) {
 		BaseResponse response = new BaseResponse();
 		boolean isSuccessful = asTruckDataStore.delete(truckId);
-		if(isSuccessful) {
+		if (isSuccessful) {
 			response.setResponseStatus(ResponseStatus.SUCCESS);
 			response.setResponseCode(HttpStatus.OK);
 		} else {
@@ -187,6 +198,38 @@ public class TruckQueryService {
 		}
 		response.setResponseStatus(ResponseStatus.SUCCESS);
 		response.setResponseCode(HttpStatus.OK);
+		return response;
+	}
+
+	public TruckQueryResponse queryByExpiry(String isExpired, String expiryTimeUSinMillis) {
+		TruckQueryResponse response = new TruckQueryResponse();
+		boolean isExpiredBool = Boolean.valueOf(isExpired);
+		long begin = 0, end = Long.MAX_VALUE;
+		if (StringUtils.isEmpty(expiryTimeUSinMillis)) {
+			if (isExpiredBool) {
+				end = System.currentTimeMillis() - tzInAmerica.getRawOffset() + tzInDefault.getRawOffset() - 1;
+			} else {
+				begin = System.currentTimeMillis() - tzInAmerica.getRawOffset() + tzInDefault.getRawOffset();
+			}
+		} else {
+			long userTime = Long.valueOf(expiryTimeUSinMillis);
+			if (isExpiredBool) {
+				end = userTime - 1;
+			} else {
+				begin = userTime;
+			}
+		}
+		List<Truck> trucks = asTruckDataStore.queryByExpiry(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE,
+				getDefaultBins(), begin, end);
+		if (CollectionUtils.isEmpty(trucks)) {
+			response.setResponseCode(HttpStatus.NOT_FOUND);
+			response.setResponseStatus(ResponseStatus.FAILED);
+		} else {
+			response.setTrucks(trucks);
+			response.setNumberOfResults(trucks.size());
+			response.setResponseCode(HttpStatus.OK);
+			response.setResponseStatus(ResponseStatus.SUCCESS);
+		}
 		return response;
 	}
 

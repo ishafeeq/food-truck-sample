@@ -198,6 +198,27 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		return trucks;
 	}
 
+	@Override
+	public List<Truck> queryByExpiry(String binExpDate, String[] bin, long begin, long end) {
+		Statement stmt = new Statement();
+		List<Truck> trucks = new ArrayList<>();
+		stmt.setNamespace(aerospikeConfig.getNamespace());
+		stmt.setSetName(aerospikeConfig.getSet());
+		stmt.setBinNames(bin);
+		stmt.setFilter(Filter.range(binExpDate, begin, end));
+		RecordSet records = aerospikeClient.query(null, stmt);
+		try {
+			while (records.next()) {
+				Record record = records.getRecord();
+				Truck qTruck = getTruckFromRecord(record);
+				trucks.add(qTruck);
+			}
+		} finally {
+			records.close();
+		}
+		return trucks;
+	}
+
 	private Truck getTruckFromRecord(Record record) {
 		Truck truck = new Truck();
 		truck.setTruckId((String) record.getValue(AeroSpikeConstant.BIN_NAME_TRUCK_ID));
@@ -211,7 +232,7 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 			truck.setLatitude(Double.valueOf(loc[1].trim()));
 			truck.setLongitude(Double.valueOf(loc[0].trim()));
 		}
-		truck.setExpirationDate((Long.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE))));
+		truck.setExpirationDate(((Long) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE)));
 		return truck;
 	}
 
@@ -233,7 +254,7 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		bins[1] = new Bin(AeroSpikeConstant.BIN_NAME_LOCATION_ID, truck.getLocationId());
 		bins[2] = new Bin(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME, truck.getApllicantName());
 		bins[3] = new Bin(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, truck.getFacilityType().name());
-		bins[4] = new Bin(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE, truck.getExpirationDate().toString());
+		bins[4] = new Bin(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE, truck.getExpirationDate());
 		bins[5] = Bin.asGeoJSON(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO, getGeo2DString(truck).toString());
 		bins[6] = new Bin(AeroSpikeConstant.BIN_NAME_LOC_DESC, truck.getLocationDescription());
 		return bins;

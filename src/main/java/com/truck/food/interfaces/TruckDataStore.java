@@ -15,6 +15,7 @@ public interface TruckDataStore {
 	public List<Truck> queryByLocation(String binNameLatLonGeo, String[] bin, Double lat, Double lng, int radius);
 	public List<Truck> queryByStreetName(String binNameLocDesc, String[] defaultBins, String streetName);
 	public boolean delete(String truckId);
+	public List<Truck> queryByExpiry(String binExpDate, String[] bin, long begin, long end);
 	
 	public default String getKey(Truck truck) {
 		return truck.getLocationId().toString();
