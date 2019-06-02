@@ -202,10 +202,11 @@ public class TruckQueryService {
 		boolean isExpiredBool = Boolean.valueOf(isExpired);
 		long begin = 0, end = Long.MAX_VALUE;
 		if (StringUtils.isEmpty(expiryTimeUSinMillis)) {
+			long currTime = System.currentTimeMillis();
 			if (isExpiredBool) {
-				end = System.currentTimeMillis() - tzInAmerica.getRawOffset() + tzInDefault.getRawOffset() - 1;
+				end = currTime - tzInAmerica.getOffset(currTime) + tzInDefault.getOffset(currTime) - 1;
 			} else {
-				begin = System.currentTimeMillis() - tzInAmerica.getRawOffset() + tzInDefault.getRawOffset();
+				begin = currTime - tzInAmerica.getOffset(currTime) + tzInDefault.getOffset(currTime);
 			}
 		} else {
 			long userTime = Long.valueOf(expiryTimeUSinMillis);

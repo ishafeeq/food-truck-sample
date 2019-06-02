@@ -78,6 +78,7 @@ public class CommonAdaptor {
 			LOGGER.error("Invalid date String: " + dateString);
 			throw e;
 		}
-		return (date.toInstant().toEpochMilli() - tzInAmerica.getRawOffset() + tzInDefault.getRawOffset());
+		long epochMili = date.toInstant().toEpochMilli();
+		return (epochMili - tzInAmerica.getOffset(epochMili) + tzInDefault.getOffset(epochMili));
 	}
 }
