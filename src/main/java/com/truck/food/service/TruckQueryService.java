@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.aerospike.client.Bin;
 import com.truck.food.adaptor.CommonAdaptor;
 import com.truck.food.constant.AeroSpikeConstant;
 import com.truck.food.constant.CommonConstant;

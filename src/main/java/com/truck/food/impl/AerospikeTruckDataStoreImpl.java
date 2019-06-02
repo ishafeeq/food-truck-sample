@@ -23,6 +23,13 @@ import com.aerospike.client.query.IndexType;
 import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.RecordSet;
 import com.aerospike.client.query.RegexFlag;
+import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.IndexCollectionType;
+import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
 import com.aerospike.client.query.Statement;
 import com.aerospike.client.task.IndexTask;
 import com.truck.food.config.AerospikeConfig;
@@ -47,7 +54,6 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 				AerospikeUtil.getVarArgs(aerospikeConfig));
 		// Create Index of required columns here
 		createIndexes();
-
 	}
 
 	private void createIndexes() {
@@ -206,7 +212,6 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 			truck.setLongitude(Double.valueOf(loc[0].trim()));
 		}
 		truck.setExpirationDate((Long.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE))));
-
 		return truck;
 	}
 
