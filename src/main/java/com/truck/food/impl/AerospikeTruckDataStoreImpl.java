@@ -36,6 +36,9 @@ import com.truck.food.util.AerospikeUtil;
 @Component
 public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 
+//	private static final Logger LOGGER = LogManager.getLogger(AerospikeTruckDataStoreImpl.class);
+
+	
 	private AerospikeClient aerospikeClient = null;
 
 	@Autowired
@@ -55,6 +58,7 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		String index_applicant_name = "index_applicant_name";
 		String index_address = "index_address";
 		String index_geo_2d = "index_geo_2d";
+		String index_exp_dt = "index_exp_dt";
 		try {
 			IndexTask task1 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
 					aerospikeConfig.getSet(), index_applicant_name, AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
@@ -64,9 +68,13 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 			IndexTask task3 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
 					aerospikeConfig.getSet(), index_geo_2d, AeroSpikeConstant.BIN_NAME_LAT_LON_GEO,
 					IndexType.GEO2DSPHERE);
+			IndexTask task4 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
+					aerospikeConfig.getSet(), index_exp_dt, AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE,
+					IndexType.NUMERIC);
 			task1.waitTillComplete();
 			task2.waitTillComplete();
 			task3.waitTillComplete();
+			task4.waitTillComplete();
 		} catch (AerospikeException ae) {
 			if (ae.getResultCode() != ResultCode.INDEX_ALREADY_EXISTS) {
 				throw ae;
@@ -156,17 +164,21 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		stmt.setSetName(aerospikeConfig.getSet());
 		stmt.setBinNames(bin);
 		stmt.setPredExp(PredExp.stringBin(bin[0]), PredExp.stringValue(value),
-				PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE));
+				PredExp.stringRegex(RegexFlag.NONE));
+//		long startTime = System.currentTimeMillis();
 		RecordSet records = aerospikeClient.query(null, stmt);
+//		LOGGER.info("AS get time: "  + (System.currentTimeMillis() - startTime));
 		try {
 			while (records.next()) {
 				Record record = records.getRecord();
 				Truck truck = getTruckFromRecord(record);
 				trucks.add(truck);
+//				LOGGER.info("AS parse time per truck time: "  + (System.currentTimeMillis() - startTime));
 			}
 		} finally {
 			records.close();
 		}
+//		LOGGER.info("AS Total get time: "  + (System.currentTimeMillis() - startTime));
 		return trucks;
 	}
 
