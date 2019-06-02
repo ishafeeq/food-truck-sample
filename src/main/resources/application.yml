@@ -2,3 +2,11 @@ server :
   servlet:
     context-path : /food-truck-sample
   port :  4444
+  tomcat:
+    accesslog :
+      enabled : true
+      pattern : '%h %l %u %t "%r" %s %b %D %F %{X-Request-ID}o %{X-Forwarded-For}i'
+      directory : /opt/logs/food-truck-sample/
+      prefix : access
+      suffix : .log
+      rotate : false

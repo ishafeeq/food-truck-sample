@@ -21,6 +21,9 @@ import com.aerospike.client.policy.WritePolicy;
 import com.aerospike.client.query.Filter;
 import com.aerospike.client.query.IndexType;
 import com.aerospike.client.query.PredExp;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.RegexFlag;
+import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.IndexCollectionType;
 import com.aerospike.client.query.PredExp;
 import com.aerospike.client.query.RecordSet;
@@ -51,7 +54,6 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 				AerospikeUtil.getVarArgs(aerospikeConfig));
 		// Create Index of required columns here
 		createIndexes();
-
 	}
 
 	private void createIndexes() {
@@ -64,20 +66,19 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 			IndexTask task1 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
 					aerospikeConfig.getSet(), index_applicant_name, AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
 					IndexType.STRING);
-//			IndexTask task2 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(), aerospikeConfig.getSet(), index_address, AeroSpikeConstant.BIN_NAME_APPLICANT_NAME,
-//					IndexType.STRING);
+			IndexTask task2 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
+					aerospikeConfig.getSet(), index_address, AeroSpikeConstant.BIN_NAME_LOC_DESC, IndexType.STRING);
 			IndexTask task3 = aerospikeClient.createIndex(policy, aerospikeConfig.getNamespace(),
 					aerospikeConfig.getSet(), index_geo_2d, AeroSpikeConstant.BIN_NAME_LAT_LON_GEO,
 					IndexType.GEO2DSPHERE);
 			task1.waitTillComplete();
-//			task2.waitTillComplete();
+			task2.waitTillComplete();
 			task3.waitTillComplete();
 		} catch (AerospikeException ae) {
 			if (ae.getResultCode() != ResultCode.INDEX_ALREADY_EXISTS) {
 				throw ae;
 			}
 		}
-
 	}
 
 	@Override
@@ -201,16 +202,16 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		Truck truck = new Truck();
 		truck.setTruckId((String) record.getValue(AeroSpikeConstant.BIN_NAME_TRUCK_ID));
 		truck.setApllicantName((String) record.bins.get(AeroSpikeConstant.BIN_NAME_APPLICANT_NAME));
+		truck.setFacilityType(
+				(FacilityType.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
 		truck.setLocationId((Long) record.bins.get(AeroSpikeConstant.BIN_NAME_LOCATION_ID));
+		truck.setLocationDescription((String) record.getValue(AeroSpikeConstant.BIN_NAME_LOC_DESC));
 		String[] loc = getLatLong(((GeoJSONValue) record.bins.get(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO)).toString());
 		if (null != loc && loc.length > 0) {
 			truck.setLatitude(Double.valueOf(loc[1].trim()));
 			truck.setLongitude(Double.valueOf(loc[0].trim()));
 		}
 		truck.setExpirationDate((Long.valueOf((String) record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE))));
-		truck.setFacilityType((FacilityType.valueOf((String)record.bins.get(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE))));
-//		truck.setExpirationDate(new Date((String)record.bins.get(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE)));
-
 		return truck;
 	}
 
@@ -226,7 +227,7 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 	}
 
 	private Bin[] getAllBins(Truck truck) {
-		Bin[] bins = new Bin[6];
+		Bin[] bins = new Bin[7];
 
 		bins[0] = new Bin(AeroSpikeConstant.BIN_NAME_TRUCK_ID, truck.getTruckId());
 		bins[1] = new Bin(AeroSpikeConstant.BIN_NAME_LOCATION_ID, truck.getLocationId());
@@ -234,11 +235,41 @@ public class AerospikeTruckDataStoreImpl implements TruckDataStore {
 		bins[3] = new Bin(AeroSpikeConstant.BIN_NAME_FACILITY_TYPE, truck.getFacilityType().name());
 		bins[4] = new Bin(AeroSpikeConstant.BIN_NAME_EXPIRATION_DATE, truck.getExpirationDate().toString());
 		bins[5] = Bin.asGeoJSON(AeroSpikeConstant.BIN_NAME_LAT_LON_GEO, getGeo2DString(truck).toString());
+		bins[6] = new Bin(AeroSpikeConstant.BIN_NAME_LOC_DESC, truck.getLocationDescription());
 		return bins;
 	}
 
 	private StringBuilder getGeo2DString(Truck truck) {
 		return AerospikeUtil.getGeo2DString(String.valueOf(truck.getLatitude()), String.valueOf(truck.getLongitude()));
+	}
+
+	@Override
+	public List<Truck> queryByStreetName(String locDescBin, String[] defaultBins, String streetName) {
+		Statement stmt = new Statement();
+		List<Truck> trucks = new ArrayList<>();
+		stmt.setNamespace(aerospikeConfig.getNamespace());
+		stmt.setSetName(aerospikeConfig.getSet());
+		stmt.setBinNames(defaultBins);
+		stmt.setPredExp(PredExp.stringBin(locDescBin), PredExp.stringValue(streetName),
+				PredExp.stringRegex(RegexFlag.ICASE | RegexFlag.NEWLINE));
+		RecordSet records = aerospikeClient.query(null, stmt);
+		try {
+			while (records.next()) {
+				Record record = records.getRecord();
+				Truck truck = getTruckFromRecord(record);
+				trucks.add(truck);
+			}
+		} finally {
+			records.close();
+		}
+		return trucks;
+	}
+
+	@Override
+	public boolean delete(String truckId) {
+		Key aerospikeKey = new Key(aerospikeConfig.getNamespace(), aerospikeConfig.getSet(), truckId);
+		aerospikeClient.delete(null, aerospikeKey);
+		return true;
 	}
 
 }

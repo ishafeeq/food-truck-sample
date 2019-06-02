@@ -14,6 +14,7 @@ public class Truck {
 	private Long locationId;
 	private String apllicantName;
 	private FacilityType facilityType;
+	private String locationDescription;
 	private LicenseStatus status;
 	private List<FoodItem> foodItems;
 	
@@ -63,6 +64,19 @@ public class Truck {
 	 */
 	public void setApllicantName(String apllicantName) {
 		this.apllicantName = apllicantName;
+	}
+	
+	/**
+	 * @return the locationDescription
+	 */
+	public String getLocationDescription() {
+		return locationDescription;
+	}
+	/**
+	 * @param locationDescription the locationDescription to set
+	 */
+	public void setLocationDescription(String locationDescription) {
+		this.locationDescription = locationDescription;
 	}
 	/**
 	 * @return the facilityType
