@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AerospikeConfig {
 
-    private String hostAndPort = "127.0.0.1:3000";
+    private String hostAndPort = "aerospike.mygate.com:3000";
     private String namespace = "test";
     private String set = "truck";
     private int readPolicySocketTimeout = 1000;

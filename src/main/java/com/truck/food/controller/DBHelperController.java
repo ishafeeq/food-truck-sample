@@ -1,6 +1,5 @@
 package com.truck.food.controller;
 
-import static com.truck.food.constant.CommonConstant.GET_TRUCK_INFO_ENDPOINT;
 import static com.truck.food.constant.CommonConstant.SYNC_DB_ENDPOINT;
 
 import org.apache.logging.log4j.LogManager;
